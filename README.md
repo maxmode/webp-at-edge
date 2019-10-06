@@ -112,6 +112,7 @@ That is because CloudFront will keep separate cache for different browsers (diff
 3. When there is no converted image in CloudFront, conversion to WebP takes ~650ms for a 82Kb jpeg.
 Conversion of same image to Jpeg2000 will take ~1300ms.
 
-#License
-
-- ImageMagick - https://imagemagick.org/script/license.php
+# License
+- This project - [LICENSE.txt](LICENSE.txt?raw=true "Title")
+- ImageMagick - [ImageMagick LICENSE](https://imagemagick.org/script/license.php)
+- cwebp - [libweb COPYING](libweb/COPYING?raw=true "Title")
