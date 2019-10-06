@@ -38,12 +38,14 @@ See https://developers.google.com/web/tools/lighthouse/audits/webp
 
 # Deployment
 
-**Step 1**. Install dependencies with **npm**:
+**Step 1**. Enable "Accept" header in a configuration of CloudFront distribution.
+
+**Step 2**. Install dependencies with **npm**:
 ```bash
 npm install
 ```
 
-**Step 2**. Deploy with **Serverless**
+**Step 3**. Deploy with **Serverless**
 ```bash
 sls deploy
 ```
@@ -55,7 +57,7 @@ endpoints:
 ```
 The value of this output would be needed at the next step
 
-**Step 3**. Create A Lambda Edge function manually and attach it to your CloudFront distribution.
+**Step 4**. Create A Lambda Edge function manually and attach it to your CloudFront distribution.
 Source code of the Edge Lambda is in the file *origin-request.js*.
 Note that you need to update it with your domain name and with API Gateway URL, obtained in previous step. 
 
@@ -65,7 +67,7 @@ When choosing a memory size for a Lambda function, it's always a choice between 
 We recommend 1280Mb, as increasing memory size further does not give significant performance boost. 
 ![Choosing memory for cwebp](cwebp_memory_choice.png?raw=true "Title")
 Watch column "80%". It shows how many milliseconds conversion took on average with different memory settings.
-You may increase memory syze to 3008Mb, which will make an extra 5% performance boost, and 2.5X cost increase.
+You may increase memory size to 3008Mb, which will make an extra 5% performance boost, and 2.5X cost increase.
 
 
 # Performance considerations
@@ -81,7 +83,7 @@ You may increase memory syze to 3008Mb, which will make an extra 5% performance 
  content-length: 13770
  
  # without WebP
- cg-mb2018051:webp-at-edge maxmode$ curl -I https://mxx.news/media/website/MXX.jpg -H "Accept:image/jpg" -X GET | grep content-
+ curl -I https://mxx.news/media/website/MXX.jpg -H "Accept:image/jpg" -X GET | grep content-
  content-type: image/jpeg
  content-length: 34973
  ```
