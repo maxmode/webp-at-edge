@@ -1,0 +1,31 @@
+service: webp-node
+
+plugins:
+  - serverless-offline
+  - serverless-apigw-binary
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: prod
+  region: us-east-1
+
+custom:
+  apigwBinary:
+    types:
+      - 'image/*'
+
+package:
+  exclude:
+    - test/**
+    - .idea/**
+    - serverless.yml
+
+functions:
+  webp:
+    handler: handler.webp
+    timeout: 30
+    memorySize: 1280
+    events:
+      - http: get /webp
+      - http: get /webp/{proxy+}
