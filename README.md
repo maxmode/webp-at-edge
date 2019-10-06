@@ -13,14 +13,14 @@ System listens to a browser "Accept" header. If browser supports WebP - it will 
 
 There are 3 possible traffic flows:
 ![WebP at Edge Architecture](architecture.png?raw=true "Title")
-1. When user requests anything but images (for example html page, or css files) - he will be routed via bold lines directly to origin.
-2. When user requests an image, but browser does not support WebP - the request will also follow bold lines.
-3. When user reuests an image and browser supports WebP - requests will be proxied to WebP generator, implemented on API Gateway + Lambda.
+1. User requests anything but images (for example html page, or css files) - he will be routed via bold lines directly to origin.
+2. User requests an image, but browser does not support WebP - the request will also follow bold lines.
+3. User requests an image and browser supports WebP - requests will be proxied to WebP generator, implemented on API Gateway + Lambda.
 The Lambda will first request original image from the website (bold lines route), then it will convert it to WebP format and return to the user.  
 
 This is by far the best solution for WebP generation in terms of performance and integration flexibility. 
-As a conversion tool was chosen a native **cwebp** linux tool, as it has shown
-around 5% speed improvement over **Sharp**, which is considered as fastest conversion tool.
+As an image conversion tool was chosen a native [**cwebp**](https://developers.google.com/speed/webp/download) linux library, as it has shown
+around 5% speed improvement over [**Sharp**](https://github.com/lovell/sharp), which is claimed to be faster then GraphicsMagic.
 ![Sharp and cwebp performance](cwebp_performance.png?raw=true "Title")
 
 # Why?
