@@ -23,9 +23,16 @@ package:
 
 functions:
   webp:
-    handler: handler.webp
+    handler: handler.cwebp
     timeout: 30
     memorySize: 1280
     events:
       - http: get /webp
       - http: get /webp/{proxy+}
+  jp2:
+    handler: handler.im
+    timeout: 30
+    memorySize: 1536
+    events:
+      - http: get /jp2
+      - http: get /jp2/{proxy+}

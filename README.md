@@ -4,11 +4,19 @@
 
 # About
 
-Project allows to enable WebP images on any website, without touching it's source code.
+Project allows to enable **WebP** and **JPEG2000** images on any website, without touching it's source code.
+
+| Next-gen format | Generated with | Runs on Lambda |
+|-----------------|----------------|----------------|
+| WebP   (webp)   | cwebp (libweb) |     ✅ Yes     |
+| JPEG 2000 (jp2) | ImageMagick    |     ✅ Yes     |  
 
 Generation of WebP images is happening on the fly.
 
-System listens to a browser "Accept" header. If browser supports WebP - it will get it. Otherwise original image will be returned.
+System listens to a browser "Accept" header.
+If browser supports WebP - it will get it.
+Otherwise original image will be returned.
+Safari browsers on desktop and mobile will get .jp2 images also based on "Accept" header. 
 
 
 There are 3 possible traffic flows:
@@ -25,7 +33,7 @@ around 5% speed improvement over [**Sharp**](https://github.com/lovell/sharp), w
 
 # Why?
 
-Next-gen image formats, like **WebP** have better compression compared to jpg, png, or gif.
+Next-gen image formats, like **WebP** and **Jpeg 2000** have better compression compared to jpg, png, or gif.
 Using nex-gen images on a website will make it faster and improve user experience.
 See https://developers.google.com/web/tools/lighthouse/audits/webp
 
@@ -61,20 +69,29 @@ The value of this output would be needed at the next step
 Source code of the Edge Lambda is in the file *origin-request.js*.
 Note that you need to update it with your domain name and with API Gateway URL, obtained in previous step. 
 
+**Step 5**. (Optional). Fine-tune which images you want to convert to next-gen formats in 
+an origin-request Lambda Edge function.
+By default all images on website are converted. 
 
 # Memory size choice
-When choosing a memory size for a Lambda function, it's always a choice between performance and cost efficiency.
+When choosing a memory size for a Lambda function, for WebP conversion, it's always a choice between performance and cost efficiency.
 We recommend 1280Mb, as increasing memory size further does not give significant performance boost. 
 ![Choosing memory for cwebp](cwebp_memory_choice.png?raw=true "Title")
 Watch column "80%". It shows how many milliseconds conversion took on average with different memory settings.
 You may increase memory size to 3008Mb, which will make an extra 5% performance boost, and 2.5X cost increase.
+
+With Jpeg2000 situation is a bit different.
+It takes ~2 times more time to generate image from same source, and memory consumption is also higher.
+![Choosing memory for jpeg2000](jp2_memory_choice.png?raw=true "Title")
+We recommend 1536Mb for jpeg2000 lambda function. It's hard to say if performance increases by adding more memory.
 
 
 # Performance considerations
 
 **Positive performance impact**:
 - Size of your images will be decreased in most cases. Users with slow internet connection will benefit the most.
- For example, 82Kb becomes 62Kb, when requested with "Accept:image/webp" header. For small images difference is even more significant:
+ For example, 82Kb becomes 62Kb, when requested with "Accept:image/webp" header. 
+ For small images difference is even more significant:
  
  ```bash
  # with WebP
@@ -92,4 +109,9 @@ You may increase memory size to 3008Mb, which will make an extra 5% performance 
 1. After enabling "Accept" header in CloudFront, caching efficiency was decreased for all website resources.
 That is because CloudFront will keep separate cache for different browsers (different values of Accept header).
 2. @Edge function, connected to Origin-Request event at Cloudfront slows down every request to origin by ~10ms
-3. When there is no converted image in CloudFront, conversion takes ~650ms for a 82Kb jpeg.
+3. When there is no converted image in CloudFront, conversion to WebP takes ~650ms for a 82Kb jpeg.
+Conversion of same image to Jpeg2000 will take ~1300ms.
+
+#License
+
+- ImageMagick - https://imagemagick.org/script/license.php
