@@ -3,6 +3,7 @@ service: webp-node
 plugins:
   - serverless-offline
   - serverless-apigw-binary
+  - serverless-api-cloudfront
 
 provider:
   name: aws
@@ -14,6 +15,11 @@ custom:
   apigwBinary:
     types:
       - 'image/*'
+
+  apiCloudFront:
+    compress: true
+    cookies: none
+    querystring: none
 
 package:
   exclude:

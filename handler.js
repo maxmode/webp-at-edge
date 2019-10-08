@@ -3,7 +3,8 @@
 const superagent = require('superagent');
 
 module.exports.cwebp = async (event) => {
-    const originUrl = event.pathParameters.proxy;
+    const originUrl = event.pathParameters.proxy.replace('.mxx.webp', '');
+
     console.log('OriginURL: ' + originUrl);
     try {
         const response = await superagent.get(originUrl).responseType('blob');
@@ -35,7 +36,7 @@ module.exports.cwebp = async (event) => {
 };
 
 module.exports.im = async (event) => {
-    const originUrl = event.pathParameters.proxy;
+    const originUrl = event.pathParameters.proxy.replace('.mxx.jp2', '');
     console.log('OriginURL: ' + originUrl);
     try {
         const toPath = '/tmp/download';

@@ -13,22 +13,32 @@ Project allows to enable **WebP** and **JPEG2000** images on any website, withou
 
 Generation of WebP images is happening on the fly.
 
-System listens to a browser "Accept" header.
-If browser supports WebP - it will get it.
-Otherwise original image will be returned.
-Safari browsers on desktop and mobile will get .jp2 images also based on "Accept" header. 
+System detects support of WebP by listening to "Accept" request header. If it contains 'image/webp' - WebP image will be returned.
+For JPEG2000 support, system is checking User-Agent header. In case browser is Safari - JPEG2000 image will be returned.
+It is also possible to request WebP or JP2 image explicitly by adding `.mxx.webp` or `.mxx.jp2` to the URL.
+
+Example:
+```bash
+https://example.com/image.jpg # original image URL
+https://example.com/image.jpg.mxx.webp # URL of WebP version of the image. Image will be generated in the fly and cached for 1 year.
+https://example.com/image.jpg.mxx.jp2 # URL of JPEG2000 version of the same image. Will be genegated in the fly and cached for 1 year.
+
+When Google Chrome goes to https://example.com/image.jpg - it will be redirected to https://example.com/image.jpg.mxx.webp
+When Safari goes to https://example.com/image.jpg - it will be redirected to https://example.com/image.jpg.mxx.jp2
+
+```
 
 
-There are 3 possible traffic flows:
+There are 3 cache behaviours in the CDN:
 ![WebP at Edge Architecture](architecture.png?raw=true "Title")
-1. User requests anything but images (for example html page, or css files) - he will be routed via bold lines directly to origin.
-2. User requests an image, but browser does not support WebP - the request will also follow bold lines.
-3. User requests an image and browser supports WebP - requests will be proxied to WebP generator, implemented on API Gateway + Lambda.
-The Lambda will first request original image from the website (bold lines route), then it will convert it to WebP format and return to the user.  
+1. If URL ends with .mxx.webp - request will go to image proxy, which will generate WebP image on the fly.
+2. If URL ends with .mxx.jp2 - request will go to image proxy, which will generate JPEG2000 image on the fly.
+3. All other requests will be forwarded to your website directly.
 
 This is by far the best solution for WebP generation in terms of performance and integration flexibility. 
 As an image conversion tool was chosen a native [**cwebp**](https://developers.google.com/speed/webp/download) linux library, as it has shown
-around 5% speed improvement over [**Sharp**](https://github.com/lovell/sharp), which is claimed to be faster then GraphicsMagic.
+around 5% speed improvement over [**Sharp**](https://github.com/lovell/sharp), which is claimed to be faster then ImageMagick.
+For JPEG2000, ImageMagick was used, as there are no faster alternatives for this image format yet.
 ![Sharp and cwebp performance](cwebp_performance.png?raw=true "Title")
 
 # Why?
@@ -45,8 +55,6 @@ See https://developers.google.com/web/tools/lighthouse/audits/webp
 
 
 # Deployment
-
-**Step 1**. Enable "Accept" header in a configuration of CloudFront distribution.
 
 **Step 2**. Install dependencies with **npm**:
 ```bash
@@ -65,12 +73,19 @@ endpoints:
 ```
 The value of this output would be needed at the next step
 
-**Step 4**. Create A Lambda Edge function manually and attach it to your CloudFront distribution.
-Source code of the Edge Lambda is in the file *origin-request.js*.
-Note that you need to update it with your domain name and with API Gateway URL, obtained in previous step. 
+**Step 4** Create 2 origins in your CloudFront distribution, and 2 cache behaviours.
 
-**Step 5**. (Optional). Fine-tune which images you want to convert to next-gen formats in 
-an origin-request Lambda Edge function.
+| Origin name | Origin domain | Origin path | Cache behaviour pattern | Cache behaviour options |
+|-------------|---------------|-------------|-------------------------|-------------------------|
+|    WebP     | {YOUR API GATEWAY DOMAIN FORM STEP 3} | /prod/webp/https://{YOUR WEBSITE DOMAIN} | *.mxx.webp | default |
+|    JP2     | {YOUR API GATEWAY DOMAIN FORM STEP 3} | /prod/jp2/https://{YOUR WEBSITE DOMAIN} | *.mxx.jp2 | default |
+
+**Step 5**. Create A Lambda Edge function manually and attach it to your CloudFront distribution.
+Source code of the Edge Lambda is in the file *viewer-request.js*.
+Note that you need to update it with your domain name. 
+
+**Step 6**. (Optional). Fine-tune which images you want to convert to next-gen formats in 
+an viewer-request Lambda Edge function.
 By default all images on website are converted. 
 
 # Memory size choice
@@ -90,25 +105,28 @@ We recommend 1536Mb for jpeg2000 lambda function. It's hard to say if performanc
 
 **Positive performance impact**:
 - Size of your images will be decreased in most cases. Users with slow internet connection will benefit the most.
- For example, 82Kb becomes 62Kb, when requested with "Accept:image/webp" header. 
- For small images difference is even more significant:
+ Example:
  
  ```bash
- # with WebP
- curl -I https://mxx.news/media/website/MXX.jpg -H "Accept:image/webp" -X GET | grep content-
- content-type: image/webp
- content-length: 13770
- 
- # without WebP
- curl -I https://mxx.news/media/website/MXX.jpg -H "Accept:image/jpg" -X GET | grep content-
- content-type: image/jpeg
- content-length: 34973
+ # Original - 35Kb
+curl -I https://mxx.news/media/website/MXX.jpg -X GET | grep content-
+content-type: image/jpeg
+content-length: 34973
+
+ # Webp - 14Kb
+curl -I https://mxx.news/media/website/MXX.jpg.mxx.webp -X GET | grep content-
+content-type: image/webp
+content-length: 13770
+
+ # JPEG2000 - 17Kb
+curl -I https://mxx.news/media/website/MXX.jpg.mxx.jp2 -X GET | grep content-
+content-type: image/jp2
+content-length: 16553
+
  ```
 
 **Negative performance impact**: 
-1. After enabling "Accept" header in CloudFront, caching efficiency was decreased for all website resources.
-That is because CloudFront will keep separate cache for different browsers (different values of Accept header).
-2. @Edge function, connected to Origin-Request event at Cloudfront slows down every request to origin by ~10ms
+2. @Edge function, connected to Viewer-Request event at Cloudfront slows down every request by ~10ms
 3. When there is no converted image in CloudFront, conversion to WebP takes ~650ms for a 82Kb jpeg.
 Conversion of same image to Jpeg2000 will take ~1300ms.
 
